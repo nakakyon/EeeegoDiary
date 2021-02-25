@@ -1,0 +1,16 @@
+version: '3'
+services:
+  app:
+    # Dockerfileの場所
+    build: 
+        context: ./
+        dockerfile: ./project/Dockerfile
+    working_dir: /home/node/app/project
+    # ホストOSとコンテナ内でソースコードを共有する
+    volumes:
+      - ./:/home/node/app
+    ports:
+      - 3000:3000
+    tty: true
+    environment:
+      - HOST=0.0.0.0
