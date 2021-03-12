@@ -28,6 +28,8 @@
       "@types/node",
       "vuetify",
       "@nuxtjs/axios",
+      "@types/js-cookie",
+      "@types/cookie",
     ],
   },
   "exclude": [
