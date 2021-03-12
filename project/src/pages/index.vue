@@ -109,11 +109,20 @@
           Eeee語日記を使ってオリジナルのフレーズが<br />
           瞬時に組み立てられるように取り組みましょう！
         </v-responsive>
-        <v-btn color="grey" to="/login" outlined large>
-          <span class="grey--text text--darken-1 font-weight-bold">
-            ログイン
-          </span>
-        </v-btn>
+        <template v-if="!isLogin">
+          <v-btn color="grey" to="/login" outlined large>
+            <span class="grey--text text--darken-1 font-weight-bold">
+              ログイン
+            </span>
+          </v-btn>
+        </template>
+        <template v-else>
+          <v-btn color="grey" to="/diary" outlined large>
+            <span class="grey--text text--darken-1 font-weight-bold">
+              日記を書く
+            </span>
+          </v-btn>
+        </template>
       </v-container>
       <div class="py-12"></div>
     </section>
@@ -122,11 +131,16 @@
 
 <script lang="ts">
 import { Component, Vue } from 'nuxt-property-decorator'
+import { userStore } from '@/store'
 
 @Component({
   components: {},
 })
 export default class Index extends Vue {
+  get isLogin() {
+    return userStore.isLogin
+  }
+
   descriptions: { icon: string; title: string; text: string }[] = [
     {
       icon: 'mdi-school',
