@@ -1,7 +1,11 @@
 <template>
   <v-app>
     <v-app-bar app color="white">
-      <v-toolbar-title class="font-weight-black headline">
+      <v-toolbar-title
+        class="font-weight-black headline"
+        style="cursor: pointer"
+        @click="$router.push('/')"
+      >
         Eeee語日記
       </v-toolbar-title>
       <v-spacer></v-spacer>
