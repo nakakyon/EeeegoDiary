@@ -15,7 +15,7 @@
                 <v-textarea
                   v-model="jpDiary"
                   label="日記"
-                  rows="2"
+                  rows="4"
                   outlined
                   dense
                   auto-grow
@@ -27,20 +27,45 @@
                 <v-textarea
                   v-model="enDiary"
                   label="英訳"
-                  rows="2"
+                  rows="4"
                   outlined
                   dense
                   auto-grow
                   placeholder="日記に書いた内容を英訳してみましょう"
                 ></v-textarea>
               </v-col>
+              <v-col cols="12">
+                <v-textarea
+                  v-model="transDiary"
+                  label="翻訳"
+                  rows="2"
+                  outlined
+                  dense
+                  auto-grow
+                  readonly
+                  placeholder="翻訳した日記の内容がここに書き込まれます"
+                ></v-textarea>
+              </v-col>
             </v-row>
           </v-card-text>
           <v-card-actions>
+            <v-btn depressed color="primary" @click="trans"> 翻訳 </v-btn>
             <v-spacer></v-spacer>
             <v-btn depressed @click="cancel"> キャンセル </v-btn>
             <v-btn depressed color="primary" @click="submit"> 保存 </v-btn>
           </v-card-actions>
+          <v-dialog v-model="isLoading" hide-overlay persistent width="300">
+            <v-card color="primary" dark>
+              <v-card-text>
+                翻訳中…
+                <v-progress-linear
+                  indeterminate
+                  color="white"
+                  class="mb-0"
+                ></v-progress-linear>
+              </v-card-text>
+            </v-card>
+          </v-dialog>
         </v-container>
       </v-card>
     </v-form>
@@ -69,6 +94,8 @@ export default class Dialog extends Vue {
   date: string = ''
   jpDiary: string = ''
   enDiary: string = ''
+  transDiary: string = ''
+  isLoading: boolean = false
 
   required = (v: string) => !!v || '入力して下さい'
 
@@ -78,16 +105,53 @@ export default class Dialog extends Vue {
       this.date = this.diary.date
       this.jpDiary = this.diary.jpDiary
       this.enDiary = this.diary.enDiary
+      this.transDiary = ''
     } else {
       this.date = ''
       this.jpDiary = ''
       this.enDiary = ''
+      this.transDiary = ''
     }
   }
 
   cancel() {
     ;(this.$refs as any).form.resetValidation()
     this.syncedIsDisplay = false
+  }
+
+  async trans() {
+    this.isLoading = true
+    // 改行単位に分割
+    const diaryTexts = this.jpDiary.split('\n')
+    // API呼び出し単位に翻訳する文字列を格納する
+    const apiCalls: string[] = []
+    let text: string = ''
+
+    for (let i = 0; i < diaryTexts.length; i++) {
+      text = text + diaryTexts[i] + '\n'
+      let isPushed = false
+      // 500文字を超えた場合は追加
+      if (text.length > 500) {
+        apiCalls.push(text)
+        isPushed = true
+        // 初期化
+        text = ''
+      }
+      // 最後の配列で追加を行っていない場合は追加
+      if (i === diaryTexts.length - 1 && !isPushed) {
+        apiCalls.push(text)
+      }
+    }
+
+    // Promiseインスタンスの配列を作成
+    const transDiaries = apiCalls.map(async (value) => {
+      return await this.$transRepository.get('ja', 'en', value)
+    })
+    // Promiseインスタンスの配列を翻訳し、文字列に変換する
+    this.transDiary = (await Promise.all(transDiaries)).join('')
+    // 末尾が改行で終わってる場合はTRIMして除去する
+    this.transDiary = this.transDiary.trim()
+    this.isLoading = false
   }
 
   async submit() {
