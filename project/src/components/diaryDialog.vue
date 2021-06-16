@@ -77,6 +77,11 @@ import { Component, Vue, Prop, PropSync, Watch } from 'nuxt-property-decorator'
 import firebase from '@/plugins/firebase'
 import { userStore } from '@/store'
 
+type TransResponce = {
+  code: number
+  text: string
+}
+
 @Component({
   components: {},
 })
@@ -121,37 +126,63 @@ export default class Dialog extends Vue {
 
   async trans() {
     this.isLoading = true
-    // 改行単位に分割
-    const diaryTexts = this.jpDiary.split('\n')
-    // API呼び出し単位に翻訳する文字列を格納する
-    const apiCalls: string[] = []
-    let text: string = ''
 
-    for (let i = 0; i < diaryTexts.length; i++) {
-      text = text + diaryTexts[i] + '\n'
-      let isPushed = false
-      // 500文字を超えた場合は追加
-      if (text.length > 500) {
-        apiCalls.push(text)
-        isPushed = true
-        // 初期化
-        text = ''
-      }
-      // 最後の配列で追加を行っていない場合は追加
-      if (i === diaryTexts.length - 1 && !isPushed) {
-        apiCalls.push(text)
-      }
+    // ↓↓ axios を使用すると Safari でエラーとなる(リクエストヘッダにデフォルトで余計なものが付与される？)
+    // ↓↓ また Post で実装したかったが CORS でエラー
+    // // 改行単位に分割
+    // const diaryTexts = this.jpDiary.split('\n')
+    // // API呼び出し単位に翻訳する文字列を格納する
+    // const apiCalls: string[] = []
+    // let text: string = ''
+
+    // for (let i = 0; i < diaryTexts.length; i++) {
+    //   text = text + diaryTexts[i] + '\n'
+    //   let isPushed = false
+    //   // 500文字を超えた場合は追加
+    //   if (text.length > 500) {
+    //     apiCalls.push(text)
+    //     isPushed = true
+    //     // 初期化
+    //     text = ''
+    //   }
+    //   // 最後の配列で追加を行っていない場合は追加
+    //   if (i === diaryTexts.length - 1 && !isPushed) {
+    //     apiCalls.push(text)
+    //   }
+    // }
+    // // Promiseインスタンスの配列を作成
+    // const transDiaries = apiCalls.map(async (value) => {
+    //   return await this.$transRepository.get('ja', 'en', value)
+    // })
+    // // Promiseインスタンスの配列を翻訳し、文字列に変換する
+    // this.transDiary = (await Promise.all(transDiaries)).join('')
+    // // 末尾が改行で終わってる場合はTRIMして除去する
+    // this.transDiary = this.transDiary.trim()
+    // ↑↑ axios
+
+    // fetch API を使用して翻訳する
+    try {
+      const response = await fetch(process.env.BASE_URL || '', {
+        method: 'POST',
+        body: JSON.stringify({
+          source: 'ja',
+          target: 'en',
+          text: this.jpDiary,
+        }),
+      })
+      // JSON.stringifyを使用して文字列化してから、JSON.parseする
+      const data = JSON.parse(
+        JSON.stringify(await response.json())
+      ) as TransResponce
+      // 翻訳結果をセット
+      this.transDiary = data.text
+    } catch (error) {
+      console.error(error)
+      alert(error)
+      throw error
+    } finally {
+      this.isLoading = false
     }
-
-    // Promiseインスタンスの配列を作成
-    const transDiaries = apiCalls.map(async (value) => {
-      return await this.$transRepository.get('ja', 'en', value)
-    })
-    // Promiseインスタンスの配列を翻訳し、文字列に変換する
-    this.transDiary = (await Promise.all(transDiaries)).join('')
-    // 末尾が改行で終わってる場合はTRIMして除去する
-    this.transDiary = this.transDiary.trim()
-    this.isLoading = false
   }
 
   async submit() {
